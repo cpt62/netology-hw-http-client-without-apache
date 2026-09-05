@@ -1,6 +1,6 @@
-package Service;
+package service;
 
-import Entity.CatsGrade;
+import entity.CatsGrade;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -22,23 +22,21 @@ public class HttpClientCustom {
         ObjectMapper mapper = new ObjectMapper();
 
         HttpClient client = getHttpClient();
+        HttpRequest request = getHttpRequest();
         try {
-            HttpRequest request = getHttpRequest();
             HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
             if (response.statusCode() == 200) {
                 try (InputStream jsonResponse = response.body()) {
                     List<CatsGrade> catsGradeList = mapper.readValue(jsonResponse, new TypeReference<List<CatsGrade>>() {
                     });
                     catsGradeList.stream()
-                            .filter(c -> c.getUpvotes() > 0)
+                            .filter(c -> c.getUpvotes() != null && c.getUpvotes() > 0)
                             .sorted(Comparator.comparingInt(CatsGrade::getUpvotes))
                             .forEach(System.out::println);
                 }
             } else {
                 System.err.println(response.statusCode());
             }
-        } catch (IllegalArgumentException e) {
-            System.out.println("Ошибка аргумента (URL)");
         } catch (IOException ioException) {
             System.err.println(ioException.getMessage());
         } catch (InterruptedException e) {
@@ -52,7 +50,7 @@ public class HttpClientCustom {
                 .build();
     }
 
-    private static HttpRequest getHttpRequest() throws IllegalArgumentException {
+    private static HttpRequest getHttpRequest() {
         return HttpRequest.newBuilder(URI.create(CATS_URL))
                 .GET()
                 .setHeader("Accept", "application/json")
